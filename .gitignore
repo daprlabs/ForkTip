@@ -1,0 +1,3 @@
+Dependencies/orleans/SDK/Binaries/Applications/*
+Dependencies/orleans/SDK/LocalSilo/Applications/*
+Dependencies/orleans/SDK/LocalSilo/Applications/**
