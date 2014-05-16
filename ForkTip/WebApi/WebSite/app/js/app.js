@@ -12,6 +12,7 @@ angular.module('app', [
 config(['$routeProvider', function ($routeProvider) {
     $routeProvider.when('/recipe', { templateUrl: 'app/partials/recipeEdit.html', controller: 'RecipeCtrl' });
     $routeProvider.when('/r', { templateUrl: 'app/partials/recipeView.html', controller: 'RecipeCtrl' });
+    $routeProvider.when('/welcome', { templateUrl: 'app/partials/welcome.html', controller: 'RecipeCtrl' });
     $routeProvider.otherwise({ redirectTo: '/recipe' });
 }]).run(function (editableOptions) {
     editableOptions.theme = 'bs3';

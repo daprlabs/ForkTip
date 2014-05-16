@@ -1,2 +1,2 @@
-﻿<a ng-if="trigger" editable-text="property" onbeforesave="onBeforeSaveFunc($data)" onaftersave="onAfterSaveFunc($data)" blur="submit">{{property}}<span ng-if="!property" class="text-muted">{{default}}</span>&nbsp;&nbsp;<span class="glyphicon glyphicon-pencil small text-muted"></span></a>
+﻿<a ng-if="trigger" editable-text="property" buttons="no" onbeforesave="onBeforeSaveFunc($data)" onaftersave="onAfterSaveFunc($data)" blur="submit">{{property}}<span ng-if="!property" class="text-muted">{{default}}</span>&nbsp;&nbsp;<span class="glyphicon glyphicon-pencil small text-muted"></span></a>
 <a ng-if="!trigger">{{property}}</a>

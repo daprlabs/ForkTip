@@ -2,7 +2,7 @@
 
 /* Controllers */
 
-angular.module('app.controllers', ['rx', 'ui.bootstrap', 'xeditable'])
+angular.module('app.controllers', ['rx', 'ui.bootstrap', 'xeditable', 'ui.sortable'])
     .controller('MainCtrl', [
         '$scope', '$routeParams', '$http', 'login', function($scope, $routeParams) {
             console.log("MainCtrl");
@@ -17,9 +17,15 @@ angular.module('app.controllers', ['rx', 'ui.bootstrap', 'xeditable'])
         'recipe',
         function ($scope, $routeParams, $location, recipe) {
             var kind = 'recipe';
+            var id = $routeParams['r'];
+            if (!id) {
+                $location.path('/welcome');
+            } else if ($location.path() === '/welcome') {
+                $location.path('/recipe');
+            }
+
             $scope.recipe = new Recipe();
             console.log("RecipeCtrl");
-            var id = $routeParams['r'];
             console.log('Recipe ' + id);
             recipe.recipe(id).subscribe(function (value) {
                 console.log('Recipe ' + id + ' = ' + JSON.stringify(value));
@@ -34,11 +40,22 @@ angular.module('app.controllers', ['rx', 'ui.bootstrap', 'xeditable'])
                 recipe.add().subscribe(function(idString) {
                     var newId = JSON.parse(idString).replace(new RegExp('-', 'g'), '');
                     $location.search({ r: newId });
+                    $location.path('/recipe');
                 });
             };
 
-            $scope.setAtIndex = function(property, index, data) {
+            $scope.setAtIndex = function (property, index, data) {
                 $scope[kind][property][index] = data;
+                $scope.set(property)($scope[kind].id, $scope[kind][property]);
+            };
+
+            $scope.removeAtIndex = function (property, index) {
+                var collection = $scope[kind][property];
+
+                if (index >= 0) {
+                    collection.splice(index, 1);
+                }
+
                 $scope.set(property)($scope[kind].id, $scope[kind][property]);
             };
 
@@ -49,6 +66,14 @@ angular.module('app.controllers', ['rx', 'ui.bootstrap', 'xeditable'])
                 });
             };
 
+            $scope.ingredientsSortableOptions = {
+                update: updateCollection('ingredients')
+            };
+
+            $scope.directionsSortableOptions = {
+                update: updateCollection('directions')
+            };
+
             function addCollectionValue(property) {
                 return function () {
                     var collection = $scope[kind][property];
@@ -56,6 +81,15 @@ angular.module('app.controllers', ['rx', 'ui.bootstrap', 'xeditable'])
                     if (last || collection.length === 0) {
                         $scope[kind][property].push('');
                     }
+                };
+            }
+
+            function updateCollection(property) {
+                return function () {
+                    $scope.$apply(function () {
+                        console.log($scope[kind][property]);
+                        return $scope.set(property)($scope[kind].id, $scope[kind][property]);
+                    });
                 };
             }
         }

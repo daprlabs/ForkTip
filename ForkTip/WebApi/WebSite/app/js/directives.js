@@ -14,7 +14,6 @@ angular.module('app.directives', ['app.controllers', 'xeditable']).
             templateUrl: 'app/partials/xeditable.html',
             restrict: 'E',
             link: function (scope, elem, attrs) {
-                console.log(elem['0'].attributes[0]);
                 scope.onBeforeSaveFunc = function ($data) {
                     if (scope.onBeforeSave) {
                         scope.onBeforeSave({ $data: $data });
@@ -42,7 +41,6 @@ angular.module('app.directives', ['app.controllers', 'xeditable']).
             templateUrl: 'app/partials/xeditableArea.html',
             restrict: 'E',
             link: function (scope, elem, attrs) {
-                console.log(elem['0'].attributes[0]);
                 scope.onBeforeSaveFunc = function ($data) {
                     if (scope.onBeforeSave) {
                         scope.onBeforeSave({ $data: $data });

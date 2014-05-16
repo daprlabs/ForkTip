@@ -1,4 +1,12 @@
-﻿.icon-xl {
+﻿.icon-lg {
+    font-size: 1.2em;
+}
+
+.bold {
+    font-weight: bold;
+}
+
+.icon-xl {
     font-size: 4em;
 }
 
