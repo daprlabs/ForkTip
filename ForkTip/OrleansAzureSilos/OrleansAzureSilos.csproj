@@ -165,14 +165,6 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Orleans.Journal\Orleans.Journal.csproj">
-      <Project>{9623d0c3-97ff-476c-a24b-8eb9bc4ab360}</Project>
-      <Name>Orleans.Journal</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Orleans.Journal.AzureTable\Orleans.Journal.AzureTable.csproj">
-      <Project>{227b55f6-200c-4214-b153-fb53b301c5e9}</Project>
-      <Name>Orleans.Journal.AzureTable</Name>
-    </ProjectReference>
     <ProjectReference Include="..\Grains\Grains.csproj">
       <Project>{2b653171-663d-4826-9fd8-6e382ea606b0}</Project>
       <Name>Grains</Name>

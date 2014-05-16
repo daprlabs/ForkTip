@@ -1,17 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <OrleansConfiguration xmlns="urn:orleans">
   <Globals>
-    <Liveness LivenessType="AzureTable" /><!--
+    <Liveness LivenessType="AzureTable" />
+    <!-- Note: "UseDevelopmentStorage=true" remains to satisfy the runtime. It will be replaced at runtime if ServiceConfigurationSetting is provided. -->
     <Azure DeploymentId="ForkTip"
-      DataConnectionString="DefaultEndpointsProtocol=https;AccountName=ForkTip;AccountKey=xDEawFnVl/jga2B2IHFCD23ETsrWEBM+wcvfwVQ/k6XTbfeIfGUIn+l8wrpEbBdqeG1SEkG4XPXCpRCYOcnsHg=="/>-->
-    <Azure DeploymentId="ForkTip"
-      DataConnectionString="DefaultEndpointsProtocol=https;AccountName=ForkTip;AccountKey=UseDevelopmentStorage=true"/>
+      DataConnectionString="UseDevelopmentStorage=true;ServiceConfigurationSetting=TableStorageAccount"/>
+    <!--<Azure DeploymentId="ForkTip"
+      DataConnectionString="DefaultEndpointsProtocol=https;AccountName=ForkTip;AccountKey=UseDevelopmentStorage=true"/>-->
     <StorageProviders>
-      <Provider Type="Orleans.Storage.MemoryStorage" Name="AzureTableStore" />
-      <!--<Provider Type="Orleans.Storage.AzureTableStorage" Name="AzureTableStore" TableName="grains" DataConnectionString="DefaultEndpointsProtocol=https;AccountName=ForkTip;AccountKey=xDEawFnVl/jga2B2IHFCD23ETsrWEBM+wcvfwVQ/k6XTbfeIfGUIn+l8wrpEbBdqeG1SEkG4XPXCpRCYOcnsHg==" />-->
-      <!-- To use Azure storage, uncomment one of the following lines: -->
-      <!--<Provider Type="Orleans.Storage.AzureTableStorage" Name="AzureStore" DataConnectionString="UseDevelopmentStorage=true" />-->
-      <!--<Provider Type="Orleans.Storage.AzureTableStorage" Name="AzureStore" DataConnectionString="DefaultEndpointsProtocol=https;AccountName=MYACCOUNTNAME;AccountKey=MYACCOUNTKEY" />-->
+      <!--Provider Type="Orleans.Storage.MemoryStorage" Name="InMemory" />-->
+      <!-- Note: "UseDevelopmentStorage=true" remains to satisfy the runtime. It will be replaced at runtime if ServiceConfigurationSetting is provided. -->
+      <Provider Type="Orleans.Storage.AzureTableStorage" Name="AzureTableStore" TableName="grains" DataConnectionString="UseDevelopmentStorage=true;ServiceConfigurationSetting=TableStorageAccount"/>
     </StorageProviders>
   </Globals>
   <Defaults>
