@@ -1,12 +1,20 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<ServiceConfiguration serviceName="ForkTip" xmlns="http://schemas.microsoft.com/ServiceHosting/2008/10/ServiceConfiguration" osFamily="4" osVersion="*" schemaVersion="2013-10.2.2">
+<ServiceConfiguration serviceName="ForkTip" xmlns="http://schemas.microsoft.com/ServiceHosting/2008/10/ServiceConfiguration" osFamily="4" osVersion="*" schemaVersion="2014-06.2.4">
   <Role name="OrleansAzureSilos">
     <Instances count="3" />
     <ConfigurationSettings>
       <Setting name="DataConnectionString" value="UseDevelopmentStorage=true" />
       <Setting name="TableStorageAccount" value="UseDevelopmentStorage=true" />
       <Setting name="Microsoft.WindowsAzure.Plugins.Diagnostics.ConnectionString" value="UseDevelopmentStorage=true" />
+      <Setting name="Microsoft.WindowsAzure.Plugins.RemoteAccess.Enabled" value="true" />
+      <Setting name="Microsoft.WindowsAzure.Plugins.RemoteAccess.AccountUsername" value="dapr" />
+      <Setting name="Microsoft.WindowsAzure.Plugins.RemoteAccess.AccountEncryptedPassword" value="MIIBlQYJKoZIhvcNAQcDoIIBhjCCAYICAQAxggFOMIIBSgIBADAyMB4xHDAaBgNVBAMME1dpbmRvd3MgQXp1cmUgVG9vbHMCEBGMMoOMl9elTrgqxmvzR7QwDQYJKoZIhvcNAQEBBQAEggEAKmuMMqrbChwcUCdNlzr3W7+oER3BYfa6/ysx+FOnUrdfkVjWCu4sCccxRwloNBOk1Qcg5XofXEevyVQ/ZFdPEjx8GBgZZRRLqfj11bTw03U3HG+ndvpdiV6BepZOLvDJgTNy7bsakps6y4k1xR5ZIwObRpaSETGxgtMW+voZBstr8/qbcG0qAIOnGCIZB7+ESb6o5qv9hNhj7Z5pM+3XHW9FrOWDMFg/1EZW/EuB3MI88NnqH3n3+XDCRk4YvXtVPVTfiTByDlDWMyiwOxuV3y/cemCwR/xUVlK3OESBhKkfOgk8ut2wa8pFPBOF5x/VJqPpE/bMJQGut0cxuU1JTDArBgkqhkiG9w0BBwEwFAYIKoZIhvcNAwcECDMKz+mOmUcCgAiyZA3+I5LJpg==" />
+      <Setting name="Microsoft.WindowsAzure.Plugins.RemoteAccess.AccountExpiration" value="2015-10-06T23:59:59.0000000+11:00" />
+      <Setting name="Microsoft.WindowsAzure.Plugins.RemoteForwarder.Enabled" value="true" />
     </ConfigurationSettings>
+    <Certificates>
+      <Certificate name="Microsoft.WindowsAzure.Plugins.RemoteAccess.PasswordEncryption" thumbprint="7963D1FF92D78E7C5949B56CD5A73006650F7845" thumbprintAlgorithm="sha1" />
+    </Certificates>
   </Role>
   <Role name="WebApi">
     <Instances count="1" />
@@ -14,6 +22,13 @@
       <Setting name="DataConnectionString" value="UseDevelopmentStorage=true" />
       <Setting name="TableStorageAccount" value="UseDevelopmentStorage=true" />
       <Setting name="Microsoft.WindowsAzure.Plugins.Diagnostics.ConnectionString" value="UseDevelopmentStorage=true" />
+      <Setting name="Microsoft.WindowsAzure.Plugins.RemoteAccess.Enabled" value="true" />
+      <Setting name="Microsoft.WindowsAzure.Plugins.RemoteAccess.AccountUsername" value="dapr" />
+      <Setting name="Microsoft.WindowsAzure.Plugins.RemoteAccess.AccountEncryptedPassword" value="MIIBlQYJKoZIhvcNAQcDoIIBhjCCAYICAQAxggFOMIIBSgIBADAyMB4xHDAaBgNVBAMME1dpbmRvd3MgQXp1cmUgVG9vbHMCEBGMMoOMl9elTrgqxmvzR7QwDQYJKoZIhvcNAQEBBQAEggEAKmuMMqrbChwcUCdNlzr3W7+oER3BYfa6/ysx+FOnUrdfkVjWCu4sCccxRwloNBOk1Qcg5XofXEevyVQ/ZFdPEjx8GBgZZRRLqfj11bTw03U3HG+ndvpdiV6BepZOLvDJgTNy7bsakps6y4k1xR5ZIwObRpaSETGxgtMW+voZBstr8/qbcG0qAIOnGCIZB7+ESb6o5qv9hNhj7Z5pM+3XHW9FrOWDMFg/1EZW/EuB3MI88NnqH3n3+XDCRk4YvXtVPVTfiTByDlDWMyiwOxuV3y/cemCwR/xUVlK3OESBhKkfOgk8ut2wa8pFPBOF5x/VJqPpE/bMJQGut0cxuU1JTDArBgkqhkiG9w0BBwEwFAYIKoZIhvcNAwcECDMKz+mOmUcCgAiyZA3+I5LJpg==" />
+      <Setting name="Microsoft.WindowsAzure.Plugins.RemoteAccess.AccountExpiration" value="2015-10-06T23:59:59.0000000+11:00" />
     </ConfigurationSettings>
+    <Certificates>
+      <Certificate name="Microsoft.WindowsAzure.Plugins.RemoteAccess.PasswordEncryption" thumbprint="7963D1FF92D78E7C5949B56CD5A73006650F7845" thumbprintAlgorithm="sha1" />
+    </Certificates>
   </Role>
 </ServiceConfiguration>

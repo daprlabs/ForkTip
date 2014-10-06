@@ -27,10 +27,9 @@ namespace Orleans.Azure.Silos
     using Microsoft.WindowsAzure.Diagnostics;
     using Microsoft.WindowsAzure.ServiceRuntime;
 
-    using Orleans.Host.Azure;
-
-    using LogLevel = Microsoft.WindowsAzure.Diagnostics.LogLevel;
-
+    using Orleans.Host;
+    using Orleans.Runtime.Configuration;
+    
     /// <summary>
     /// The worker role.
     /// </summary>

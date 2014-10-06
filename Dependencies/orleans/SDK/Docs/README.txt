@@ -1,5 +1,5 @@
-Codename Orleans v0.9 Preview April 2014
-========================================
+Codename Orleans v0.91 Preview August 2014
+==========================================
 
 What is Orleans?
 ----------------
@@ -22,7 +22,7 @@ License
 The Orleans SDK preview release is for evaluation purposes only. The license terms are spelled out
 in the file 'License.rtf' directly under the installation folder.
 
-The Orleans SDK preview release includes binaries from Windows Azure SDK v2.2. Its license terms are
+The Orleans SDK preview release includes binaries from Windows Azure SDK v2.4. Its license terms are
 spelled out in the file 'Azure SDK License.rtf' directly under the installation folder.
 
 

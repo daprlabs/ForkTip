@@ -10,7 +10,8 @@ namespace Orleans.OwinMiddleware
     using System.IO;
     using System.Reflection;
 
-    using Orleans.Host.Azure.Client;
+    using Orleans.Host;
+    using Orleans.Runtime.Configuration;
 
     using Owin;
 

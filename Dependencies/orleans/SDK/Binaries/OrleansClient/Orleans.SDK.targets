@@ -15,19 +15,6 @@ Copyright (C) Microsoft Corporation. All rights reserved.
   <PropertyGroup Condition="'$(OrleansReferencesBase)'!=''">
     <ClientGenExeDir>$(OrleansReferencesBase)</ClientGenExeDir>
   </PropertyGroup>
-  <!-- Build path to OrleansMsBuildTask.dll -->
-  <Choose>
-    <When Condition="'$(SolutionName)'=='Orleans'">
-      <PropertyGroup>
-        <BuildTaskDir>$(SolutionDir)\Dependencies\OrleansMsBuildTask</BuildTaskDir>
-      </PropertyGroup>
-    </When>
-    <Otherwise>
-      <PropertyGroup>
-        <BuildTaskDir>$(ClientGenExeDir)</BuildTaskDir>
-      </PropertyGroup>
-    </Otherwise>
-  </Choose>
   <Choose>
     <When Condition="HasTrailingSlash($(ClientGenExeDir))">
       <PropertyGroup>
@@ -40,8 +27,19 @@ Copyright (C) Microsoft Corporation. All rights reserved.
       </PropertyGroup>
     </Otherwise>
   </Choose>
-  <UsingTask TaskName="OrleansMsBuildTask" AssemblyFile="$(BuildTaskDir)\OrleansMsBuildTask.dll" />
-  <UsingTask TaskName="WriteToFile" AssemblyFile="$(BuildTaskDir)\OrleansMsBuildTask.dll" />
+
+  <Choose>
+    <When Condition="'$(VisualStudioVersion)' == '11.0'">
+      <PropertyGroup Condition="Exists('$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.0\Framework\v4.0\Fsc.exe')">
+        <FSharpCompilerPath>$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.0\Framework\v4.0\fsc.exe</FSharpCompilerPath>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup Condition="Exists('$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.1\Framework\v4.0\Fsc.exe')">
+        <FSharpCompilerPath>$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.1\Framework\v4.0\fsc.exe</FSharpCompilerPath>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
 
   <!-- This target is run just before Compile in case of a Orleans Grain Interface Project -->
   <Target Name="OrleansClientPreprocessing"
@@ -55,66 +53,58 @@ Copyright (C) Microsoft Corporation. All rights reserved.
     <Message Text="[OrleansClientPreprocessing] - OrleansReferencesBase=$(OrleansReferencesBase)"/>
     <Message Text="[OrleansClientPreprocessing] - Using ClientGenExeDir location=$(ClientGenExeDir)"/>
     <MakeDir Directories="$(IntermediateOutputPath)Generated;"/>
-    <Touch Files="$(ProjectDir)Properties\orleans.codegen.cs" ForceTouch="true" AlwaysCreate="true" ContinueOnError="true" Condition="!Exists('$(ProjectDir)Properties\orleans.codegen.cs')"/>
-    <!--
-    <OrleansMsBuildTask 
-      InputAssembly="$(IntermediateOutputPath)$(TargetName)$(TargetExt)"
-      SigningKey="$(SnkFile)"
-      IsServer="false"
-      NoMerge="true"
-      References="@(ReferencePath)"
-      Sources="@(Compile)"
-      Defines="$(DefineConstants)"
-      CodeGenOptions="$(ClientGenOptions)"
-      CodeGenExeDir="$(ClientGenExeDir)"
-      OutputAssembly="$(IntermediateOutputPath)$(TargetName)$(TargetExt)"
-    />
-    -->
     <PropertyGroup>
       <ArgsFile>$(IntermediateOutputPath)$(TargetName).codegen.args.txt</ArgsFile>
     </PropertyGroup>
     <Message Text="[OrleansClientPreprocessing] - Code-gen args file=$(ArgsFile)"/>
-    <WriteToFile Clear="true" OutputFile="$(ArgsFile)" Text='/nomerge'/>
-    <WriteToFile OutputFile="$(ArgsFile)" Text='/in:$(IntermediateOutputPath)$(TargetName)$(TargetExt)'/>
-    <WriteToFile OutputFile="$(ArgsFile)" Text='/key:$(SnkFile)'/>
-    <WriteToFile OutputFile="$(ArgsFile)" Text='/d:$(DefineConstants)'/>
-    <WriteToFile OutputFile="$(ArgsFile)" Text='/r:@(ReferencePath)'/>
-    <WriteToFile OutputFile="$(ArgsFile)" Text='/src:@(Compile)'/>
+    <WriteLinesToFile OverWrite="true" File="$(ArgsFile)" Lines="/nomerge"/>
+    <WriteLinesToFile File="$(ArgsFile)" Lines="/in:$(IntermediateOutputPath)$(TargetName)$(TargetExt)"/>
+    <WriteLinesToFile File="$(ArgsFile)" Lines="/key:$(SnkFile)"/>
+    <WriteLinesToFile File="$(ArgsFile)" Lines="/d:$([MSBuild]::Escape($(DefineConstants)))"/>
+    <WriteLinesToFile File="$(ArgsFile)" Lines="@(Import->'/imports:%(Identity)')"/>
+    <WriteLinesToFile File="$(ArgsFile)" Lines="/rns:$(RootNamespace)"/>
+    <WriteLinesToFile File="$(ArgsFile)" Lines="@(ReferencePath->'/r:%(Identity)')"/>
+    <WriteLinesToFile File="$(ArgsFile)" Lines="/fsharp:$(FSharpCompilerPath)"/>
+    <WriteLinesToFile File="$(ArgsFile)" Lines="/cwd:$(ProjectDir)"/>
+    <WriteLinesToFile File="$(ArgsFile)" Lines="/config:$(Configuration)"/>
+    <WriteLinesToFile File="$(ArgsFile)" Lines="/OptionExplicit:$(OptionExplicit)"/>
+    <WriteLinesToFile File="$(ArgsFile)" Lines="/OptionCompare:$(OptionCompare)"/>
+    <WriteLinesToFile File="$(ArgsFile)" Lines="/OptionStrict:$(OptionStrict)"/>
+    <WriteLinesToFile File="$(ArgsFile)" Lines="/OptionInfer:$(OptionInfer)"/>
+    <WriteLinesToFile File="$(ArgsFile)" Lines="/MyType:$(MyType)"/>
+    <WriteLinesToFile File="$(ArgsFile)" Lines="@(Compile->'/src:%(Identity)')"/>
     <Exec Command='"$(ClientGenExe)" "@$(ArgsFile)"' />
   </Target>
   
   <!-- This target is run just after Compile in case of a Orleans Grain Implementation Project -->
   <Target Name="OrleansServerObjProcessing"
-          AfterTargets="CoreCompile"
-          BeforeTargets ="CopyFilesToOutputDirectory"
+          AfterTargets="BeforeCompile"
+          BeforeTargets="CoreCompile"
           Condition="'$(OrleansProjectType)'=='Server'"
           Inputs="@(Compile);@(ReferencePath);$(ProjectDir)$(IntermediateOutputPath)$(TargetName)$(TargetExt)"
           Outputs="$(ProjectDir)$(IntermediateOutputPath)orleans.codegen.timpestamp">
     <Message Text="[OrleansServerObjProcessing] - Creating Server for Project=$(ProjectName)" Importance="high"/>
     <Message Text="[OrleansServerObjProcessing] - Using ClientGenExe location=$(ClientGenExe)"/>
-    <!--
-    <OrleansMsBuildTask 
-      InputAssembly="$(IntermediateOutputPath)$(TargetName)$(TargetExt)"
-      SigningKey="$(SnkFile)"
-      IsServer="true"
-      References="@(ReferencePath)"
-      Sources="@(Compile)"
-      Defines="$(DefineConstants)"
-      CodeGenOptions="$(ClientGenOptions)"
-      CodeGenExeDir="$(ClientGenExeDir)"
-      OutputAssembly="$(IntermediateOutputPath)$(TargetName)$(TargetExt)"
-    />
-    -->
     <PropertyGroup>
       <ArgsFile>$(IntermediateOutputPath)$(TargetName).codegen.args.txt</ArgsFile>
     </PropertyGroup>
     <Message Text="[OrleansServerObjProcessing] - Code-gen args file=$(ArgsFile)"/>
-    <WriteToFile Clear="true" OutputFile="$(ArgsFile)" Text='/svr'/>
-    <WriteToFile OutputFile="$(ArgsFile)" Text='/in:$(IntermediateOutputPath)$(TargetName)$(TargetExt)'/>
-    <WriteToFile OutputFile="$(ArgsFile)" Text='/key:$(SnkFile)'/>
-    <WriteToFile OutputFile="$(ArgsFile)" Text='/d:$(DefineConstants)'/>
-    <WriteToFile OutputFile="$(ArgsFile)" Text='/r:@(ReferencePath)'/>
-    <WriteToFile OutputFile="$(ArgsFile)" Text='/src:@(Compile)'/>
+    <WriteLinesToFile Overwrite="true" File="$(ArgsFile)" Lines="/svr"/>
+    <WriteLinesToFile File="$(ArgsFile)" Lines="/in:$(IntermediateOutputPath)$(TargetName)$(TargetExt)"/>
+    <WriteLinesToFile File="$(ArgsFile)" Lines="/key:$(SnkFile)"/>
+    <WriteLinesToFile File="$(ArgsFile)" Lines="/d:$([MSBuild]::Escape($(DefineConstants)))"/>
+    <WriteLinesToFile File="$(ArgsFile)" Lines="@(Import->'/imports:%(Identity)')"/>
+    <WriteLinesToFile File="$(ArgsFile)" Lines="/rns:$(RootNamespace)"/>
+    <WriteLinesToFile File="$(ArgsFile)" Lines="@(ReferencePath->'/r:%(Identity)')"/>
+    <WriteLinesToFile File="$(ArgsFile)" Lines="/fsharp:$(FSharpCompilerPath)"/>
+    <WriteLinesToFile File="$(ArgsFile)" Lines="/cwd:$(ProjectDir)"/>
+    <WriteLinesToFile File="$(ArgsFile)" Lines="/config:$(Configuration)"/>
+    <WriteLinesToFile File="$(ArgsFile)" Lines="/OptionExplicit:$(OptionExplicit)"/>
+    <WriteLinesToFile File="$(ArgsFile)" Lines="/OptionCompare:$(OptionCompare)"/>
+    <WriteLinesToFile File="$(ArgsFile)" Lines="/OptionStrict:$(OptionStrict)"/>
+    <WriteLinesToFile File="$(ArgsFile)" Lines="/OptionInfer:$(OptionInfer)"/>
+    <WriteLinesToFile File="$(ArgsFile)" Lines="/MyType:$(MyType)"/>
+    <WriteLinesToFile File="$(ArgsFile)" Lines="@(Compile->'/src:%(Identity)')"/>
     <Exec Command='"$(ClientGenExe)" "@$(ArgsFile)"'
           Outputs='$(IntermediateOutputPath)$(TargetName)$(TargetExt)' />
   </Target>

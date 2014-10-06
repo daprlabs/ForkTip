@@ -54,19 +54,13 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="IProtectedState.cs" />
+    <Compile Include="Properties\orleans.codegen.cs" />
     <Compile Include="RecipeGrain.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ProtectedGrainBase.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Orleans.Journal\Orleans.Journal.csproj">
-      <Project>{9623D0C3-97FF-476C-A24B-8EB9BC4AB360}</Project>
-      <Name>Orleans.Journal</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Orleans.Journal.AzureTable\Orleans.Journal.AzureTable.csproj">
-      <Project>{227b55f6-200c-4214-b153-fb53b301c5e9}</Project>
-      <Name>Orleans.Journal.AzureTable</Name>
-    </ProjectReference>
     <ProjectReference Include="..\Models\Models.csproj">
       <Project>{7763217d-a1a2-4fac-be9a-fb54a120728c}</Project>
       <Name>Models</Name>

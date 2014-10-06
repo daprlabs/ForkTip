@@ -36,14 +36,34 @@ angular.module('app.controllers', ['rx', 'ui.bootstrap', 'xeditable', 'ui.sortab
             $scope.addDirection = addCollectionValue('directions');
 
             $scope.set = recipe.set;
-            $scope.add = function() {
-                recipe.add().subscribe(function(idString) {
+            $scope.add = function () {
+                recipe.add().subscribe(function (idString) {
                     var newId = JSON.parse(idString).replace(new RegExp('-', 'g'), '');
                     $location.search({ r: newId });
                     $location.path('/recipe');
                 });
             };
 
+            $scope.share = function () {
+                var orig = $location.path();
+                $location.path('/r');
+                var shareUrl = $location.absUrl();
+                $location.path(orig);
+                var tweetUrl = 'https://twitter.com/share?text=Check out my recipe &hashtags=ForkTip&url=' + encodeURIComponent(shareUrl);
+                var width = 575,
+                height = 400,
+                left = ($(window).width() - width) / 2,
+                top = ($(window).height() - height) / 2,
+                url = tweetUrl,
+                opts = 'status=1' +
+                         ',width=' + width +
+                         ',height=' + height +
+                         ',top=' + top +
+                         ',left=' + left;
+
+                window.open(url, 'twitter', opts);
+            };
+            
             $scope.setAtIndex = function (property, index, data) {
                 $scope[kind][property][index] = data;
                 $scope.set(property)($scope[kind].id, $scope[kind][property]);
@@ -93,93 +113,7 @@ angular.module('app.controllers', ['rx', 'ui.bootstrap', 'xeditable', 'ui.sortab
                 };
             }
         }
-    ])/*
-    .controller('UsersCtrl', [
-        '$scope',
-        'ngTableParams',
-        'users',
-        function($scope, ngTableParams, users) {
-            $scope.users = {};
-            console.log("UsersCtrl");
-            users.users.subscribe(function(result) {
-                console.log(result);
-                $scope.users = result;
-                $scope.tableParams.reload();
-            });
-
-            $scope.add = function() {
-                users.add().subscribe(function() {
-                    $scope.tableParams.reload();
-                });
-            }
-
-            // Configure the producers table.
-            $scope.tableParams = new ngTableParams({
-                page: 1,
-                count: 10,
-                sorting: {
-                    id: 'asc'
-                }
-            }, {
-                total: function() { return $scope.users.total; },
-                getData: function($defer, params) {
-                    console.log(params);
-                    var start = (params.page() - 1) * params.count();
-                    console.log("Total users: " + $scope.users.total);
-                    var end = Math.min($scope.users.total, params.page() * params.count());
-                    console.log("From " + start + " to " + end);
-                    Rx.Observable.range(start, end).flatMap(users.user).toArray().subscribe($defer.resolve);
-                }
-            });
-        }
-    ])
-    .controller('ProducersCtrl', [
-        '$scope',
-        'ngTableParams',
-        'producers',
-        function($scope, ngTableParams, producers) {
-            $scope.add = function() {
-                producers.add().subscribe(function(id) {
-                    var idNum = parseInt(id);
-                    if (typeof idNum === 'number') {
-                        $scope.producers.total = idNum + 1;
-                    }
-                    $scope.tableParams.reload();
-                });
-            };
-
-            $scope.set = producers.set;
-            /*$scope.setWebSite = producers.setWebSite;#1#
-
-            $scope.producers = {
-                total: 0
-            };
-            producers.producers.subscribe(function(result) {
-                console.log(result);
-                $scope.producers = result;
-                $scope.tableParams.reload();
-            });
-
-            // Configure the producers table.
-            $scope.tableParams = new ngTableParams({
-                page: 1,
-                count: 10,
-                sorting: {
-                    id: 'asc'
-                }
-            }, {
-                total: function() { return $scope.producers.total; },
-                getData: function($defer, params) {
-                    console.log(params);
-                    var start = (params.page() - 1) * params.count();
-                    console.log("Total producers: " + $scope.producers.total);
-                    var end = Math.min($scope.producers.total, params.page() * params.count());
-                    console.log("From " + start + " to " + end);
-                    Rx.Observable.range(start, end).flatMap(producers.producer).toArray().subscribe($defer.resolve);
-                }
-            });
-        }
-    ])*/;
+    ]);
 
 function Recipe() {
     this.forkedFrom = '';

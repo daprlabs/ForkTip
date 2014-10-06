@@ -1,7 +1,4 @@
 ﻿<div class="row">
-    <div>
-        <span class="glyphicon glyphicon-file icon-xl" ng-click="add()"></span>
-    </div>
     <div class="col-md-6 center">
         <div class="row">
             <h1 class="text-center"><xeditable trigger="isEditing" property="recipe.name" default="Click to name your recipe" on-before-save="set('name')(recipe.id, $data)" /></h1>
@@ -19,15 +16,20 @@
                     <div ng-repeat="direction in recipe.directions"><span><span class="icon-lg bold">{{$index+1 | number}}.</span>&nbsp<xeditable trigger="isEditing" property="direction" default="Click to add a direction" on-after-save="setAtIndex('directions', $index, $data)" /></span>&nbsp;<span ng-click="removeAtIndex('directions', $index)" class="glyphicon glyphicon-trash"></span></div>
                 </div>
                 <button class="btn btn-default" ng-click="addDirection()"><span class="glyphicon glyphicon-plus"></span> Add a new step</button>
-                <div>
-                    <span class="pull-left glyphicon glyphicon-link icon-xl"></span><span class="pull-right glyphicon glyphicon-cutlery icon-xl" ng-click="fork()"></span>
-                </div>
+            </div>
+            <div class="col-md-4 top-buffer">
+                <p class="text-center"><xeditablearea trigger="isEditing" property="recipe.description" e-style="text-align:centre" default="Click to add a description" on-before-save="set('description')(recipe.id, $data)" /></p>
+            </div>
+        </div>
+        <div class="row top-buffer">
+            <div class="col-md-4">
+                <span class="btn btn-primary btn-lg" ng-click="add()"><i class="glyphicon glyphicon-file icon-lg "></i>&nbsp;New</span>
             </div>
             <div class="col-md-4">
-                <div>Pictures</div>
-                <div>
-                    <span class="text-center"><xeditablearea trigger="isEditing" property="recipe.description" e-style="text-align:centre" default="Click to add a description" on-before-save="set('description')(recipe.id, $data)" /></span>
-                </div>
+                <a class="btn btn-primary btn-lg" ng-click="share()"><i class="glyphicon glyphicon-link icon-lg "></i>&nbsp;Share</a>
+            </div>
+            <div class="col-md-4">
+                <span class="btn btn-primary btn-lg" ng-click="fork()"><i class="glyphicon glyphicon-cutlery icon-lg "></i>&nbsp;Fork</span>
             </div>
         </div>
     </div>

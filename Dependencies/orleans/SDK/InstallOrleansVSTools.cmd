@@ -23,7 +23,7 @@ SetX.exe OrleansSDK "%SDKHOME%"
 %VSTOOLSDIR%\..\IDE\vsixinstaller.exe /q /uninstall:462db41f-31a4-48f0-834c-1bdcc0578511
 
 @Echo - Installing Visual Studio extension package %PKG%
-%VSTOOLSDIR%\..\IDE\vsixinstaller.exe "%SDKHOME%\VisualStudioTemplates\OrleansVSTools.vsix"
+%VSTOOLSDIR%\..\IDE\vsixinstaller.exe "%SDKHOME%\OrleansVSTools.vsix"
 
 @echo --- Finished installing %PKG%
 @pause

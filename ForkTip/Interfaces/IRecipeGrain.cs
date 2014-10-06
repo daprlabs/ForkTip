@@ -1,4 +1,10 @@
-﻿namespace ForkTip.GrainInterfaces
+﻿// --------------------------------------------------------------------------------------------------------------------
+// <summary>
+//   Orleans grain communication interface IRecipeGrain
+// </summary>
+// --------------------------------------------------------------------------------------------------------------------
+
+namespace ForkTip.GrainInterfaces
 {
     using System;
     using System.Collections.Generic;
@@ -9,7 +15,7 @@
     /// <summary>
     /// Orleans grain communication interface IRecipeGrain
     /// </summary>
-    public interface IRecipeGrain : Orleans.IGrain
+    public interface IRecipeGrain : Orleans.IGrainWithGuidKey
     {
         /// <summary>
         /// Attempts to initialize this instance with the provided values, returning a value indicating whether or .

@@ -17,6 +17,7 @@ namespace ForkTip.Grains
     using ForkTip.Models;
 
     using Orleans;
+    using Orleans.Providers;
 
     /// <summary>
     /// Orleans grain implementation class RecipeGrain

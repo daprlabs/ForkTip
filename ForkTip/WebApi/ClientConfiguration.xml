@@ -6,6 +6,7 @@
   For a detailed reference, see "Orleans Configuration Reference.html".
 -->
 <ClientConfiguration xmlns="urn:orleans">
+  <SystemStore SystemStoreType="AzureTable" />
   <!-- 
   To turn tracing off, set DefaultTraceLevel="Off" and have no overrides. To see a minimum of messages, set DefaultTraceLevel="Error".
     For the trace log file name, {0} is the silo name and {1} is the current time. 

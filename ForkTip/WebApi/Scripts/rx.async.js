@@ -15,7 +15,7 @@
         freeModule = objectTypes[typeof module] && module && !module.nodeType && module,
         moduleExports = freeModule && freeModule.exports === freeExports && freeExports,
         freeGlobal = objectTypes[typeof global] && global;
-    
+
     if (freeGlobal && (freeGlobal.global === freeGlobal || freeGlobal.window === freeGlobal)) {
         root = freeGlobal;
     }
@@ -32,174 +32,405 @@
         root.Rx = factory(root, {}, root.Rx);
     }
 }.call(this, function (root, exp, Rx, undefined) {
-    
-    // Aliases
-    var Observable = Rx.Observable,
-    	observableProto = Observable.prototype,
-      observableFromPromise = Observable.fromPromise,
-      observableThrow = Observable.throwException,
-      AnonymousObservable = Rx.AnonymousObservable,
-      AsyncSubject = Rx.AsyncSubject,
-      disposableCreate = Rx.Disposable.create,
-      CompositeDisposable= Rx.CompositeDisposable,
-      immediateScheduler = Rx.Scheduler.immediate,
-      timeoutScheduler = Rx.Scheduler.timeout,
-      slice = Array.prototype.slice;
 
-    /**
-     * Invokes the specified function asynchronously on the specified scheduler, surfacing the result through an observable sequence.
-     * 
-     * @example
-     * var res = Rx.Observable.start(function () { console.log('hello'); });
-     * var res = Rx.Observable.start(function () { console.log('hello'); }, Rx.Scheduler.timeout);
-     * var res = Rx.Observable.start(function () { this.log('hello'); }, Rx.Scheduler.timeout, console);
-     * 
-     * @param {Function} func Function to run asynchronously.
-     * @param {Scheduler} [scheduler]  Scheduler to run the function on. If not specified, defaults to Scheduler.timeout.
-     * @param [context]  The context for the func parameter to be executed.  If not specified, defaults to undefined.
-     * @returns {Observable} An observable sequence exposing the function's result value, or an exception.
-     * 
-     * Remarks
-     * * The function is called immediately, not during the subscription of the resulting sequence.
-     * * Multiple subscriptions to the resulting sequence can observe the function's result.  
-     */
-    Observable.start = function (func, scheduler, context) {
-        return observableToAsync(func, scheduler, context)();
-    };
+  // Aliases
+  var Observable = Rx.Observable,
+    observableProto = Observable.prototype,
+    observableFromPromise = Observable.fromPromise,
+    observableThrow = Observable.throwException,
+    AnonymousObservable = Rx.AnonymousObservable,
+    AsyncSubject = Rx.AsyncSubject,
+    disposableCreate = Rx.Disposable.create,
+    CompositeDisposable= Rx.CompositeDisposable,
+    immediateScheduler = Rx.Scheduler.immediate,
+    timeoutScheduler = Rx.Scheduler.timeout,
+    isScheduler = Rx.helpers.isScheduler,
+    slice = Array.prototype.slice;
 
-    /**
-     * Converts the function into an asynchronous function. Each invocation of the resulting asynchronous function causes an invocation of the original synchronous function on the specified scheduler.
-     * 
-     * @example
-     * var res = Rx.Observable.toAsync(function (x, y) { return x + y; })(4, 3);
-     * var res = Rx.Observable.toAsync(function (x, y) { return x + y; }, Rx.Scheduler.timeout)(4, 3);
-     * var res = Rx.Observable.toAsync(function (x) { this.log(x); }, Rx.Scheduler.timeout, console)('hello');
-     * 
-     * @param {Function} function Function to convert to an asynchronous function.
-     * @param {Scheduler} [scheduler] Scheduler to run the function on. If not specified, defaults to Scheduler.timeout.
-     * @param {Mixed} [context] The context for the func parameter to be executed.  If not specified, defaults to undefined.
-     * @returns {Function} Asynchronous function.
-     */
-    var observableToAsync = Observable.toAsync = function (func, scheduler, context) {
-        scheduler || (scheduler = timeoutScheduler);
-        return function () {
-            var args = arguments, 
-                subject = new AsyncSubject();
+  var fnString = 'function';
 
-            scheduler.schedule(function () {
-                var result;
-                try {
-                    result = func.apply(context, args);
-                } catch (e) {
-                    subject.onError(e);
-                    return;
-                }
-                subject.onNext(result);
-                subject.onCompleted();
+  function toThunk(obj, ctx) {
+    if (Array.isArray(obj)) {
+      return objectToThunk.call(ctx, obj);
+    }
+
+    if (isGeneratorFunction(obj)) {
+      return observableSpawn(obj.call(ctx));
+    }
+
+    if (isGenerator(obj)) {
+      return observableSpawn(obj);
+    }
+
+    if (isObservable(obj)) {
+      return observableToThunk(obj);
+    }
+
+    if (isPromise(obj)) {
+      return promiseToThunk(obj);
+    }
+
+    if (typeof obj === fnString) {
+      return obj;
+    }
+
+    if (isObject(obj) || Array.isArray(obj)) {
+      return objectToThunk.call(ctx, obj);
+    }
+
+    return obj;
+  }
+
+  function objectToThunk(obj) {
+    var ctx = this;
+
+    return function (done) {
+      var keys = Object.keys(obj),
+          pending = keys.length,
+          results = new obj.constructor(),
+          finished;
+
+      if (!pending) {
+        timeoutScheduler.schedule(function () { done(null, results); });
+        return;
+      }
+
+      for (var i = 0, len = keys.length; i < len; i++) {
+        run(obj[keys[i]], keys[i]);
+      }
+
+      function run(fn, key) {
+        if (finished) { return; }
+        try {
+          fn = toThunk(fn, ctx);
+
+          if (typeof fn !== fnString) {
+            results[key] = fn;
+            return --pending || done(null, results);
+          }
+
+          fn.call(ctx, function(err, res){
+            if (finished) { return; }
+
+            if (err) {
+              finished = true;
+              return done(err);
+            }
+
+            results[key] = res;
+            --pending || done(null, results);
+          });
+        } catch (e) {
+          finished = true;
+          done(e);
+        }
+      }
+    }
+  }
+
+  function observableToThink(observable) {
+    return function (fn) {
+      var value, hasValue = false;
+      observable.subscribe(
+        function (v) {
+          value = v;
+          hasValue = true;
+        },
+        fn,
+        function () {
+          hasValue && fn(null, value);
+        });
+    }
+  }
+
+  function promiseToThunk(promise) {
+    return function(fn){
+      promise.then(function(res) {
+        fn(null, res);
+      }, fn);
+    }
+  }
+
+  function isObservable(obj) {
+    return obj && obj.prototype.subscribe === fnString;
+  }
+
+  function isGeneratorFunction(obj) {
+    return obj && obj.constructor && obj.constructor.name === 'GeneratorFunction';
+  }
+
+  function isGenerator(obj) {
+    return obj && typeof obj.next === fnString && typeof obj.throw === fnString;
+  }
+
+  function isObject(val) {
+    return val && val.constructor === Object;
+  }
+
+  /*
+   * Spawns a generator function which allows for Promises, Observable sequences, Arrays, Objects, Generators and functions.
+   * @param {Function} The spawning function.
+   * @returns {Function} a function which has a done continuation.
+   */
+  var observableSpawn = Rx.spawn = function (fn) {
+    var isGenFun = isGeneratorFunction(fn);
+
+    return function (done) {
+      var ctx = this,
+        gen = fan;
+
+      if (isGenFun) {
+        var args = slice.call(arguments),
+          len = args.length,
+          hasCallback = len && typeof args[len - 1] === fnString;
+
+        done = hasCallback ? args.pop() : error;
+        gen = fn.apply(this, args);
+      } else {
+        done = done || error;
+      }
+
+      next();
+
+      function exit(err, res) {
+        timeoutScheduler.schedule(done.bind(ctx, err, res));
+      }
+
+      function next(err, res) {
+        var ret;
+
+        // multiple args
+        if (arguments.length > 2) res = slice.call(arguments, 1);
+
+        if (err) {
+          try {
+            ret = gen.throw(err);
+          } catch (e) {
+            return exit(e);
+          }
+        }
+
+        if (!err) {
+          try {
+            ret = gen.next(res);
+          } catch (e) {
+            return exit(e);
+          }
+        }
+
+        if (ret.done)  {
+          return exit(null, ret.value);
+        }
+
+        ret.value = toThunk(ret.value, ctx);
+
+        if (typeof ret.value === fnString) {
+          var called = false;
+          try {
+            ret.value.call(ctx, function(){
+              if (called) {
+                return;
+              }
+
+              called = true;
+              next.apply(ctx, arguments);
             });
-            return subject.asObservable();
-        };
-    };
+          } catch (e) {
+            timeoutScheduler.schedule(function () {
+              if (called) {
+                return;
+              }
 
-    /**
-     * Converts a callback function to an observable sequence. 
-     * 
-     * @param {Function} function Function with a callback as the last parameter to convert to an Observable sequence.
-     * @param {Scheduler} [scheduler] Scheduler to run the function on. If not specified, defaults to Scheduler.timeout.
-     * @param {Mixed} [context] The context for the func parameter to be executed.  If not specified, defaults to undefined.
-     * @param {Function} [selector] A selector which takes the arguments from the callback to produce a single item to yield on next.
-     * @returns {Function} A function, when executed with the required parameters minus the callback, produces an Observable sequence with a single value of the arguments to the callback as an array.
-     */
-    Observable.fromCallback = function (func, scheduler, context, selector) {
-        scheduler || (scheduler = immediateScheduler);
-        return function () {
-            var args = slice.call(arguments, 0);
-
-            return new AnonymousObservable(function (observer) {
-                return scheduler.schedule(function () {
-                    function handler(e) {
-                        var results = e;
-                        
-                        if (selector) {
-                            try {
-                                results = selector(arguments);
-                            } catch (err) {
-                                observer.onError(err);
-                                return;
-                            }
-                        } else {
-                            if (results.length === 1) {
-                                results = results[0];
-                            }
-                        }
-
-                        observer.onNext(results);
-                        observer.onCompleted();
-                    }
-
-                    args.push(handler);
-                    func.apply(context, args);
-                });
+              called = true;
+              next.call(ctx, e);
             });
-        };
+          }
+          return;
+        }
+
+        // Not supported
+        next(new TypeError('Rx.spawn only supports a function, Promise, Observable, Object or Array.'));
+      }
+    }
+  };
+
+  /**
+   * Takes a function with a callback and turns it into a thunk.
+   * @param {Function} A function with a callback such as fs.readFile
+   * @returns {Function} A function, when executed will continue the state machine.
+   */
+  Rx.denodify = function (fn) {
+    return function (){
+      var args = slice.call(arguments),
+        results,
+        called,
+        callback;
+
+      args.push(function(){
+        results = arguments;
+
+        if (callback && !called) {
+          called = true;
+          cb.apply(this, results);
+        }
+      });
+
+      fn.apply(this, args);
+
+      return function (fn){
+        callback = fn;
+
+        if (results && !called) {
+          called = true;
+          fn.apply(this, results);
+        }
+      }
+    }
+  };
+
+  /**
+   * Invokes the specified function asynchronously on the specified scheduler, surfacing the result through an observable sequence.
+   *
+   * @example
+   * var res = Rx.Observable.start(function () { console.log('hello'); });
+   * var res = Rx.Observable.start(function () { console.log('hello'); }, Rx.Scheduler.timeout);
+   * var res = Rx.Observable.start(function () { this.log('hello'); }, Rx.Scheduler.timeout, console);
+   *
+   * @param {Function} func Function to run asynchronously.
+   * @param {Scheduler} [scheduler]  Scheduler to run the function on. If not specified, defaults to Scheduler.timeout.
+   * @param [context]  The context for the func parameter to be executed.  If not specified, defaults to undefined.
+   * @returns {Observable} An observable sequence exposing the function's result value, or an exception.
+   *
+   * Remarks
+   * * The function is called immediately, not during the subscription of the resulting sequence.
+   * * Multiple subscriptions to the resulting sequence can observe the function's result.
+   */
+  Observable.start = function (func, context, scheduler) {
+    return observableToAsync(func, context, scheduler)();
+  };
+
+  /**
+   * Converts the function into an asynchronous function. Each invocation of the resulting asynchronous function causes an invocation of the original synchronous function on the specified scheduler.
+   *
+   * @example
+   * var res = Rx.Observable.toAsync(function (x, y) { return x + y; })(4, 3);
+   * var res = Rx.Observable.toAsync(function (x, y) { return x + y; }, Rx.Scheduler.timeout)(4, 3);
+   * var res = Rx.Observable.toAsync(function (x) { this.log(x); }, Rx.Scheduler.timeout, console)('hello');
+   *
+   * @param {Function} function Function to convert to an asynchronous function.
+   * @param {Scheduler} [scheduler] Scheduler to run the function on. If not specified, defaults to Scheduler.timeout.
+   * @param {Mixed} [context] The context for the func parameter to be executed.  If not specified, defaults to undefined.
+   * @returns {Function} Asynchronous function.
+   */
+  var observableToAsync = Observable.toAsync = function (func, context, scheduler) {
+    isScheduler(scheduler) || (scheduler = timeoutScheduler);
+    return function () {
+      var args = arguments,
+        subject = new AsyncSubject();
+
+      scheduler.schedule(function () {
+        var result;
+        try {
+          result = func.apply(context, args);
+        } catch (e) {
+          subject.onError(e);
+          return;
+        }
+        subject.onNext(result);
+        subject.onCompleted();
+      });
+      return subject.asObservable();
     };
+  };
 
-    /**
-     * Converts a Node.js callback style function to an observable sequence.  This must be in function (err, ...) format.
-     * @param {Function} func The function to call
-     * @param {Scheduler} [scheduler] Scheduler to run the function on. If not specified, defaults to Scheduler.timeout.
-     * @param {Mixed} [context] The context for the func parameter to be executed.  If not specified, defaults to undefined.
-     * @param {Function} [selector] A selector which takes the arguments from the callback minus the error to produce a single item to yield on next.     
-     * @returns {Function} An async function which when applied, returns an observable sequence with the callback arguments as an array.
-     */
-    Observable.fromNodeCallback = function (func, scheduler, context, selector) {
-        scheduler || (scheduler = immediateScheduler);
-        return function () {
-            var args = slice.call(arguments, 0);
+  /**
+   * Converts a callback function to an observable sequence.
+   *
+   * @param {Function} function Function with a callback as the last parameter to convert to an Observable sequence.
+   * @param {Mixed} [context] The context for the func parameter to be executed.  If not specified, defaults to undefined.
+   * @param {Function} [selector] A selector which takes the arguments from the callback to produce a single item to yield on next.
+   * @returns {Function} A function, when executed with the required parameters minus the callback, produces an Observable sequence with a single value of the arguments to the callback as an array.
+   */
+  Observable.fromCallback = function (func, context, selector) {
+    return function () {
+      var args = slice.call(arguments, 0);
 
-            return new AnonymousObservable(function (observer) {
-                return scheduler.schedule(function () {
-                    
-                    function handler(err) {
-                        if (err) {
-                            observer.onError(err);
-                            return;
-                        }
+      return new AnonymousObservable(function (observer) {
+        function handler(e) {
+          var results = e;
 
-                        var results = slice.call(arguments, 1);
-                        
-                        if (selector) {
-                            try {
-                                results = selector(results);
-                            } catch (e) {
-                                observer.onError(e);
-                                return;
-                            }
-                        } else {
-                            if (results.length === 1) {
-                                results = results[0];
-                            }
-                        }
+          if (selector) {
+            try {
+              results = selector(arguments);
+            } catch (err) {
+              observer.onError(err);
+              return;
+            }
 
-                        observer.onNext(results);
-                        observer.onCompleted();
-                    }
+            observer.onNext(results);
+          } else {
+            if (results.length <= 1) {
+              observer.onNext.apply(observer, results);
+            } else {
+              observer.onNext(results);
+            }
+          }
 
-                    args.push(handler);
-                    func.apply(context, args);
-                });
-            });
-        };
+          observer.onCompleted();
+        }
+
+        args.push(handler);
+        func.apply(context, args);
+      }).publishLast().refCount();
     };
+  };
+
+  /**
+   * Converts a Node.js callback style function to an observable sequence.  This must be in function (err, ...) format.
+   * @param {Function} func The function to call
+   * @param {Mixed} [context] The context for the func parameter to be executed.  If not specified, defaults to undefined.
+   * @param {Function} [selector] A selector which takes the arguments from the callback minus the error to produce a single item to yield on next.
+   * @returns {Function} An async function which when applied, returns an observable sequence with the callback arguments as an array.
+   */
+  Observable.fromNodeCallback = function (func, context, selector) {
+    return function () {
+      var args = slice.call(arguments, 0);
+
+      return new AnonymousObservable(function (observer) {
+        function handler(err) {
+          if (err) {
+            observer.onError(err);
+            return;
+          }
+
+          var results = slice.call(arguments, 1);
+
+          if (selector) {
+            try {
+              results = selector(results);
+            } catch (e) {
+              observer.onError(e);
+              return;
+            }
+            observer.onNext(results);
+          } else {
+            if (results.length <= 1) {
+              observer.onNext.apply(observer, results);
+            } else {
+              observer.onNext(results);
+            }
+          }
+
+          observer.onCompleted();
+        }
+
+        args.push(handler);
+        func.apply(context, args);
+      }).publishLast().refCount();
+    };
+  };
 
   function createListener (element, name, handler) {
-    // Node.js specific
-    if (element.addListener) {
-      element.addListener(name, handler);
-      return disposableCreate(function () {
-        element.removeListener(name, handler);
-      });
-    } 
     if (element.addEventListener) {
       element.addEventListener(name, handler, false);
       return disposableCreate(function () {
@@ -213,7 +444,7 @@
     var disposables = new CompositeDisposable();
 
     // Asume NodeList
-    if (typeof el.item === 'function' && typeof el.length === 'number') {
+    if (Object.prototype.toString.call(el) === '[object NodeList]') {
       for (var i = 0, len = el.length; i < len; i++) {
         disposables.add(createEventListener(el.item(i), eventName, handler));
       }
@@ -224,6 +455,11 @@
     return disposables;
   }
 
+  /**
+   * Configuration option to determine whether to use native events only
+   */
+  Rx.config.useNativeEvents = false;
+
   // Check for Angular/jQuery/Zepto support
   var jq =
    !!root.angular && !!angular.element ? angular.element :
@@ -233,36 +469,57 @@
   // Check for ember
   var ember = !!root.Ember && typeof root.Ember.addListener === 'function';
 
+  // Check for Backbone.Marionette. Note if using AMD add Marionette as a dependency of rxjs
+  // for proper loading order!
+  var marionette = !!root.Backbone && !!root.Backbone.Marionette;
+
   /**
    * Creates an observable sequence by adding an event listener to the matching DOMElement or each item in the NodeList.
    *
    * @example
    *   var source = Rx.Observable.fromEvent(element, 'mouseup');
-   * 
+   *
    * @param {Object} element The DOMElement or NodeList to attach a listener.
    * @param {String} eventName The event name to attach the observable sequence.
-   * @param {Function} [selector] A selector which takes the arguments from the event handler to produce a single item to yield on next.     
+   * @param {Function} [selector] A selector which takes the arguments from the event handler to produce a single item to yield on next.
    * @returns {Observable} An observable sequence of events from the specified element and the specified event.
    */
   Observable.fromEvent = function (element, eventName, selector) {
-    if (ember) {
+    // Node.js specific
+    if (element.addListener) {
       return fromEventPattern(
-        function (h) { Ember.addListener(element, eventName); },
-        function (h) { Ember.removeListener(element, eventName); },
+        function (h) { element.addListener(eventName, h); },
+        function (h) { element.removeListener(eventName, h); },
         selector);
-    }    
-    if (jq) {
-      var $elem = jq(element);
-      return fromEventPattern(
-        function (h) { $elem.on(eventName, h); },
-        function (h) { $elem.off(eventName, h); },
-        selector);
+    }
+
+    // Use only if non-native events are allowed
+    if (!Rx.config.useNativeEvents) {
+      if (marionette) {
+        return fromEventPattern(
+          function (h) { element.on(eventName, h); },
+          function (h) { element.off(eventName, h); },
+          selector);
+      }
+      if (ember) {
+        return fromEventPattern(
+          function (h) { Ember.addListener(element, eventName, h); },
+          function (h) { Ember.removeListener(element, eventName, h); },
+          selector);
+      }
+      if (jq) {
+        var $elem = jq(element);
+        return fromEventPattern(
+          function (h) { $elem.on(eventName, h); },
+          function (h) { $elem.off(eventName, h); },
+          selector);
+      }
     }
     return new AnonymousObservable(function (observer) {
       return createEventListener(
-        element, 
-        eventName, 
-        function handler (e) { 
+        element,
+        eventName,
+        function handler (e) {
           var results = e;
 
           if (selector) {
@@ -274,10 +531,11 @@
             }
           }
 
-          observer.onNext(results); 
+          observer.onNext(results);
         });
     }).publish().refCount();
   };
+
   /**
    * Creates an observable sequence from an event emitter via an addHandler/removeHandler pair.
    * @param {Function} addHandler The function to add a handler to the emitter.

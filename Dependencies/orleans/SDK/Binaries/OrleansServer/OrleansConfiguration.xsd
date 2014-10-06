@@ -18,18 +18,27 @@
       <xs:enumeration value="InterNetworkV6" />
     </xs:restriction>
   </xs:simpleType>
+  <xs:simpleType name="SystemStorageType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="None" />
+      <xs:enumeration value="SqlServer" />
+      <xs:enumeration value="AzureTable" />
+    </xs:restriction>
+  </xs:simpleType>
   <xs:simpleType name="LivenessType">
     <xs:restriction base="xs:string">
       <xs:enumeration value="SiloDirectoryGrain" />
       <xs:enumeration value="MembershipTableGrain" />
       <xs:enumeration value="File" />
+      <xs:enumeration value="SqlServer" />
       <xs:enumeration value="AzureTable" />
     </xs:restriction>
   </xs:simpleType>
-    <xs:simpleType name="ReminderServiceType">
+  <xs:simpleType name="ReminderServiceType">
     <xs:restriction base="xs:string">
       <xs:enumeration value="None" />
       <xs:enumeration value="ReminderTableGrain" />
+      <xs:enumeration value="SqlServer" />
       <xs:enumeration value="AzureTable" />
     </xs:restriction>
   </xs:simpleType>
@@ -47,6 +56,7 @@
   <xs:simpleType name="GatewayProviderType">
     <xs:restriction base="xs:string">
       <xs:enumeration value="AzureTable" />
+      <xs:enumeration value="SQL" />
       <xs:enumeration value="Config" />
     </xs:restriction>
   </xs:simpleType>
@@ -221,40 +231,54 @@
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
-
-  <xs:complexType name="AzureConfiguration">
+  
+  <xs:complexType name="SystemStoreConfiguration">
     <xs:annotation>
       <xs:documentation>
-        The Azure type is used to define Azure related configuration settings.
+        The SystemStore type is used to define system-storage-related configuration settings.
       </xs:documentation>
-    </xs:annotation>
-     <xs:attribute name="DeploymentId" type="xs:string" use="optional">
+    </xs:annotation>   
+    <xs:attribute name="SystemStoreType" type="tns:SystemStoreType" use="required">
+      <xs:annotation>
+        <xs:documentation>
+          Specifies the kind of system store that should be used: AzureTable or SqlServer.
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="ServiceId" type="xs:string" use="optional">
        <xs:annotation>
          <xs:documentation>
-           Specifies a unique identifier of this deployment.
-           If the silos are deployed on Azure (run as workers roles), deployment id is set automatically by Azure runtime, 
-           accessible to the role via RoleEnvironment.DeploymentId static variable and is passed to the silo automatically by the role via config. 
-           So if the silos are run as Azure roles this variable should not be specified in the OrleansConmfiguration.xml (it will be overwritten if specified).
-           If the silos are deployed on the cluster and not as Azure roles, this variable should be set by a deployment script in the OrleansConmfiguration.xml file.
+           Specifies a unique identifier of this service, with will survive deployment and redeployment.
          </xs:documentation>
        </xs:annotation>
-     </xs:attribute>
+    </xs:attribute>
+    <xs:attribute name="DeploymentId" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>
+          Specifies a unique identifier of this deployment.
+          If the silos are deployed on Azure (run as workers roles), deployment id is set automatically by Azure runtime,
+          accessible to the role via RoleEnvironment.DeploymentId static variable and is passed to the silo automatically by the role via config.
+          So if the silos are run as Azure roles this variable should not be specified in the OrleansConmfiguration.xml (it will be overwritten if specified).
+          If the silos are deployed on the cluster and not as Azure roles, this variable should be set by a deployment script in the OrleansConmfiguration.xml file.
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="DataConnectionString" type="xs:string" use="optional">
       <xs:annotation>
         <xs:documentation>
-          Specifies the connection string for azure storage account.
+          Specifies the connection string for azure storage account or SQL database.
           If the silos are deployed on Azure (run as workers roles), DataConnectionString may be specified via RoleEnvironment.GetConfigurationSettingValue("DataConnectionString");
           In such a case it is taken from there and passed to the silo automatically by the role via config.
           So if the silos are run as Azure roles and this config is specified via RoleEnvironment, 
-          this variable should not be specified in the OrleansConmfiguration.xml (it will be overwritten if specified).
+          this variable should not be specified in the OrleansConfiguration.xml (it will be overwritten if specified).
           If the silos are deployed on the cluster and not as Azure roles,  this variable should be set in the OrleansConmfiguration.xml file.
           If not set at all, DevelopmentStorageAccount will be used.
         </xs:documentation>
       </xs:annotation>
     </xs:attribute>
-   </xs:complexType>  
-  
-   <xs:complexType name="LivenessConfiguration">
+   </xs:complexType>
+
+  <xs:complexType name="LivenessConfiguration">
     <xs:annotation>
       <xs:documentation>
         Specifies global liveness configuration.
@@ -649,23 +673,98 @@
           </xs:sequence>
         </xs:complexType>
       </xs:element>
-      <xs:element minOccurs="0" maxOccurs="1" name="Activation">
+      <xs:element name="Application" minOccurs="0" maxOccurs="1">
+        <xs:complexType>
+          <xs:annotation>
+            <xs:documentation>
+              todo: document Application element
+            </xs:documentation>
+          </xs:annotation>
+          <xs:sequence>
+            <xs:element name="Defaults" minOccurs="0" maxOccurs="1">
+              <xs:annotation>
+                <xs:documentation>
+                  The Defaults element permits the operator to specify default values for certain settings.
+                </xs:documentation>
+              </xs:annotation>
+              <xs:complexType>
+                <xs:sequence>
+                  <xs:element name="Deactivation" minOccurs="1" maxOccurs="1">
+                    <xs:annotation>
+                      <xs:documentation>
+                          The Deactivation element permits the operator to specify how long an activation should be idle before the system deactivates it to reclaim unsued resources.
+                      </xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                      <xs:attribute name="AgeLimit" type="tns:TimeSpan" use="required">
+                        <xs:annotation>
+                          <xs:documentation>
+                              The AgeLimit attribute specifies the maximum amount of time that an activation should remain idle before being deactivated by the runtime.
+                              If this attribute does not appear, or if the value is zero or negative, then collection will not be initiated based on activation age.
+                          </xs:documentation>
+                        </xs:annotation>
+                      </xs:attribute>
+                    </xs:complexType>
+                  </xs:element>
+                </xs:sequence>
+              </xs:complexType> 
+            </xs:element>
+            <xs:element name="GrainType" minOccurs="1" maxOccurs="unbounded">
+              <xs:annotation>
+                <xs:documentation>
+                  The GrainType element permits the operator to specify type-specific settings for grains.
+                </xs:documentation>
+              </xs:annotation>
+              <xs:complexType>
+                <xs:attribute name="Type" use="required">
+                  <xs:annotation>
+                    <xs:documentation>
+                        Use the Type attribute to specify the grain class' typename (i.e. typeof(TGrainClass).FullName).
+                    </xs:documentation>
+                  </xs:annotation>
+                </xs:attribute>
+                <xs:sequence>
+                  <xs:element name="Deactivation" minOccurs="1" maxOccurs="1">
+                    <xs:annotation>
+                      <xs:documentation>
+                          The Deactivation element permits the operator to specify how long an activation should be idle before the system deactivates it to reclaim unsued resources.
+                      </xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                      <xs:attribute name="AgeLimit" type="tns:TimeSpan" use="required">
+                        <xs:annotation>
+                          <xs:documentation>
+                              The AgeLimit attribute specifies the maximum amount of time that an activation should remain idle before being deactivated by the runtime.
+                              If this attribute does not appear, or if the value is zero or negative, then collection will not be initiated based on activation age.
+                          </xs:documentation>
+                        </xs:annotation>
+                      </xs:attribute>
+                    </xs:complexType>
+                  </xs:element>
+                </xs:sequence>
+              </xs:complexType> 
+            </xs:element>
+          </xs:sequence>
+        </xs:complexType> 
+      </xs:element>
+
+      <xs:element name="PlacementStrategy" minOccurs="0">
         <xs:annotation>
           <xs:documentation>
-            The optional Activation element describes the garbage collection policy for activations.
+            Specify placement strategy to be used for silo selection for activations.
           </xs:documentation>
         </xs:annotation>
         <xs:complexType>
-          <xs:attribute name="CollectionAgeLimit" type="tns:TimeSpan" use="optional">
-              <xs:annotation>
-                  <xs:documentation>
-                      The CollectionAgeLimit specifies the maximum age of the oldest activation in seconds before a collection will be initiated.
-                      If this attribute does not appear, or if the value is zero or negative, then collection will not be initiated based on activation age.
-                  </xs:documentation>
-              </xs:annotation>
+          <xs:attribute name="DefaultPlacementStrategy" type="xs:string" use="optional">
+            <xs:annotation>
+              <xs:documentation>
+                Type of placement strategy which is chosen at startup. PlacementStrategy.cs contains a list of options.
+              </xs:documentation>
+            </xs:annotation>
           </xs:attribute>
         </xs:complexType>
       </xs:element>
+      
       <xs:element minOccurs="0" maxOccurs="unbounded" name="SeedNode" type="tns:IPEndPoint">
         <xs:annotation>
           <xs:documentation>
@@ -677,10 +776,14 @@
           </xs:documentation>
         </xs:annotation>
       </xs:element>
-      <xs:element minOccurs="0" maxOccurs="1" name="Azure" type="tns:AzureConfiguration">
+      <xs:element minOccurs="0" maxOccurs="1" name="SystemStore" type="tns:SystemStoreConfiguration">
         <xs:annotation>
         </xs:annotation>
-      </xs:element>    
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="1" name="SQL" type="tns:SQLConfiguration">
+        <xs:annotation>
+        </xs:annotation>
+      </xs:element>
       <xs:element minOccurs="0" maxOccurs="1" name="Networking">
         <xs:annotation>
           <xs:documentation>
@@ -806,7 +909,7 @@
             </xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        </xs:complexType>
+      </xs:complexType>
       </xs:element>
       <xs:element name="LoadShedding" minOccurs="0">
         <xs:annotation>

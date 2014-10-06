@@ -1,7 +1,4 @@
 ﻿<div class="row">
-    <div>
-        <span class="glyphicon glyphicon-file icon-xl" ng-click="add()"></span>
-    </div>
     <div class="col-md-6 center">
         <div class="row">
             <h1 class="text-center">{{recipe.name}}</h1>
@@ -10,7 +7,7 @@
         <div class="row">
             <div class="col-md-4">
                 <div class="panel">
-                <h2>Ingredients</h2>
+                    <h2>Ingredients</h2>
                     <div>
                         <div ng-repeat="ingredient in recipe.ingredients track by $index | filter:ingredient"><h4><span class="text-muted">{{$index+1 | number}}.</span> {{ingredient}}</h4></div>
                     </div>
@@ -21,14 +18,20 @@
                         <div ng-repeat="direction in recipe.directions track by $index | filter:direction"><span><span class="text-muted">{{$index+1 | number}}.</span> {{direction}}</span></div>
                     </div>
                 </div>
-                <div>
-                    <span class="pull-left glyphicon glyphicon-link icon-xl"></span><span class="pull-right glyphicon glyphicon-cutlery icon-xl"></span>
-                </div>
             </div>
             <div class="col-md-8">
-                <div>Pictures</div>
-                <span ng-if="recipe.description" class="text-center">{{recipe.description}}</span>
+                <p ng-if="recipe.description" class="text-center">{{recipe.description}}</p>
             </div>
         </div>
+        <div class="row top-buffer">
+            <div class="col-md-4">
+                <span class="btn btn-primary btn-lg" ng-click="add()"><i class="glyphicon glyphicon-file icon-lg "></i>&nbsp;New Recipe!</span>
+            </div>
+            <div class="col-md-4">
+            </div>
+            <div class="col-md-4">
+                <span class="btn btn-primary btn-lg" ng-click="fork()"><i class="glyphicon glyphicon-cutlery icon-lg "></i>&nbsp;Fork</span>
+            </div>
         </div>
+    </div>
 </div>
